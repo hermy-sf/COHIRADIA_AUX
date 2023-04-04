@@ -20,7 +20,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QMutex
 from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QBrush, QColor
 import matplotlib as mpl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,  NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
@@ -46,17 +46,18 @@ class WizardGUI(QMainWindow):
         self.DATA_FILEEXTENSION = ["dat","wav",'raw']
         self.CURTIMEINCREMENT = 5
         self.DATABLOCKSIZE = 1024*32
-        self.DELTAF = 8000 #minimum peak distance in Hz  for peak detector
-        self.PEAKWIDTH = 50 # minimum peak width in Hz  for peak detector
-        self.PROMINENCE = 10 # minimum peak prominence in dB above baseline for peak detector
-        self.FILTERKERNEL = 25 # length of the moving median filter kernel
+        self.DELTAF = 5000 #minimum peak distance in Hz  for peak detector
+        self.PEAKWIDTH = 5 # minimum peak width in Hz  for peak detector
+        self.PROMINENCE = 15 # minimum peak prominence in dB above baseline for peak detector
+        self.FILTERKERNEL = 5 # length of the moving median filter kernel in % of the spectral span
         self.NUMSNAPS = 5 #number of segments evaluated for annotation
         self.STICHTAG = datetime(2023,2,25,0,0,0)
-        self.annot = [dict() for x in range(self.NUMSNAPS)]
         self.autoscan_ix = 0
         self.autoscan_active = False
         self.locs_union = []
         self.freq_union = []
+        self.oldposition = 0
+        self.open_template_flag = False
         self.ui = MyWizard()
         self.ui.setupUi(self)
 
@@ -64,9 +65,21 @@ class WizardGUI(QMainWindow):
         self.ui.actionFile_open.triggered.connect(self.open_file)
         self.ui.actionSave_header_to_template.triggered.connect(self.write_template_wavheader)
         self.ui.actionSave_header_to_template.triggered.connect(self.save_header_template)
+        self.ui.actionLoad_template_header.triggered.connect(self.open_template_file)
         self.ui.actionOverwrite_header.triggered.connect(self.overwrite_header)
-        self.ui.pushButtonAutoscan.setEnabled(True)
-        self.ui.pushButtonAutoscan.clicked.connect(self.autoscan)
+        self.ui.pushButton_Scan.setEnabled(False)
+        self.ui.pushButtonAnnotate.setEnabled(False)
+        self.ui.pushButton_Scan.clicked.connect(self.autoscan)
+        self.ui.pushButtonAnnotate.clicked.connect(self.ann_stations) 
+        self.ui.pushButtonDiscard.setEnabled(False)
+        self.ui.pushButtonDiscard.clicked.connect(self.discard_annot_line)
+        self.ui.spinBoxminSNR.valueChanged.connect(self.minSNRupdate)
+        self.ui.spinBoxminSNR_ScannerTab.valueChanged.connect(self.minSNRupdate_ScannerTab)
+        self.Baselineoffset = self.ui.spinBoxminBaselineoffset.value()
+        self.ui.spinBoxminBaselineoffset.valueChanged.connect(self.set_baselineoffset)
+        self.ui.tabWidget.setCurrentIndex(2)
+        self.ui.pushButton_InsertHeader.setEnabled(False)
+        self.ui.label_8.setEnabled(False)
 
         # initialize some GUI elements
         self.ui.radioButton_WAVEDIT.setEnabled(True)
@@ -74,19 +87,21 @@ class WizardGUI(QMainWindow):
         self.ui.radioButton_WAVEDIT.clicked.connect(self.activate_WAVEDIT)
         #self.ui.pushButton_ScanAnn.clicked.connect(self.listclick_test)
         self.ui.Annotate_listWidget.itemClicked.connect(self.ListClicked)
-        self.ui.pushButton_ScanAnn.clicked.connect(self.autoscan) 
+        self.ui.Annotate_listWidget.clear()
 
         self.ui.tableWidget.setEnabled(False)
         self.ui.tableWidget_3.setEnabled(False)
         self.ui.tableWidget_starttime.setEnabled(False)
 
         #self.ui.horizontalScrollBar.sliderMoved.connect(self.plot_spectrum_evth)
-        self.ui.horizontalScrollBar.valueChanged.connect(self.plot_spectrum_evth)
+        #self.ui.horizontalScrollBar.valueChanged.connect(self.plot_spectrum_evth)
         self.ui.progressBar_2.setProperty("value", 0)
         #self.ui.progressBar.setEnabled(True)
-        #self.ui.horizontalScrollBar.sliderReleased.connect(self.plot_spectrum_evth)
+        self.ui.horizontalScrollBar.sliderReleased.connect(self.plot_spectrum_evth)
+        #self.ui.horizontalScrollBar.actionTriggered.connect(self.plot_spectrum_evth)
         self.SigToolbar.connect(lambda: self.plot_spectrum(self,self.position))
-
+        self.ui.spinBoxNumScan.setProperty("value", 10)
+        self.ui.spinBoxminBaselineoffset.setProperty("value", 5)
         # initialize status flags
         self.fileopened = False
         self.scanplotcreated = False
@@ -105,15 +120,118 @@ class WizardGUI(QMainWindow):
         
         self.figure = Figure()
         self.canvas = FigureCanvasQTAgg(self.figure)
-        self.ui.gridLayout_2.addWidget(self.canvas,2,0,1,1)
+        self.ui.gridLayout_4.addWidget(self.canvas,3,0,1,4)
         self.toolbar = NavigationToolbar(self.canvas, self)
-        self.ui.gridLayout_2.addWidget(self.toolbar,1,0,1,1)
+        self.ui.gridLayout_4.addWidget(self.toolbar,1,0,2,1)
         self.ax = self.figure.add_subplot(111)
 
         self.ax.plot([], [])
         self.canvas.draw()
 
         self.timeref = datetime.now()
+
+    def reset_GUI(self):
+        #TODO: general reset for the GUI
+        self.autoscan_ix = 0
+        self.autoscan_active = False
+        self.locs_union = []
+        self.freq_union = []
+        self.oldposition = 0
+        self.ui.pushButtonAnnotate.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButton_Scan.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButtonAnnotate.setStyleSheet("background-color : rgb(220, 220, 220)")
+        self.ui.pushButton_Scan.setStyleSheet("background-color : rgb(220, 220, 220)")
+        self.ui.lineEdit.setText('')
+        self.ui.lineEdit.setStyleSheet("background-color : white")
+        self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.Annotate_listWidget.clear()
+        self.ui.tab_2.setEnabled(True)
+        self.ui.tab_3.setEnabled(True)
+        self.ui.tab_4.setEnabled(True)
+        self.ui.pushButton_InsertHeader.setEnabled(False)
+        self.ui.label_8.setEnabled(False)
+        #self.open_template_flag = False
+        return True
+
+    def annotation_completed(self):
+        self.ui.pushButtonAnnotate.setStyleSheet("background-color : rgb(170, 255, 127)")
+        self.ui.pushButtonAnnotate.setEnabled(False)
+        self.ui.pushButtonAnnotate.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButtonDiscard.setEnabled(False)
+        self.ui.lineEdit.setText('Record has already been annotated. For re-annotation delete annotation folder')
+        self.ui.lineEdit.setStyleSheet("background-color : yellow")
+        self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
+
+    def annotation_activate(self):
+        self.ui.pushButtonAnnotate.setStyleSheet("background-color : rgb(220,220,220)")
+        self.ui.pushButtonAnnotate.setEnabled(True)
+        self.ui.pushButtonAnnotate.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButtonDiscard.setEnabled(False)
+        self.ui.lineEdit.setText('annotation can be started or continued')
+        self.ui.lineEdit.setStyleSheet("background-color : yellow")
+        self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
+
+    def annotation_deactivate(self):
+        self.ui.pushButtonAnnotate.setStyleSheet("background-color : rgb(220,220,220)")
+        self.ui.pushButtonAnnotate.setEnabled(False)
+        self.ui.pushButtonAnnotate.setFont(QFont('MS Shell Dlg 2', 12))
+
+    def scan_completed(self):
+        self.ui.pushButton_Scan.setStyleSheet("background-color : rgb(170, 255, 127)")
+        self.ui.pushButton_Scan.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButton_Scan.setEnabled(False)
+        self.ui.pushButtonAnnotate.setEnabled(True)
+        self.ui.pushButtonAnnotate.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.lineEdit.setText('autoscan has been completed, peaks and SNRs identified')
+        self.ui.lineEdit.setStyleSheet("background-color : yellow")
+        self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
+
+    def scan_activate(self):
+        self.ui.pushButton_Scan.setStyleSheet("background-color : rgb(220,220,220)")
+        self.ui.pushButton_Scan.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButton_Scan.setEnabled(True)
+        self.ui.pushButtonAnnotate.setEnabled(False)
+        self.ui.pushButtonAnnotate.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.lineEdit.setText('autoscan can be started (search for TX peaks and SNR values)')
+        self.ui.lineEdit.setStyleSheet("background-color : yellow")
+        self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
+
+    def scan_deactivate(self):
+        self.ui.pushButton_Scan.setStyleSheet("background-color : rgb(220,220,220)")
+        self.ui.pushButton_Scan.setFont(QFont('MS Shell Dlg 2', 12))
+        self.ui.pushButton_Scan.setEnabled(False)
+        self.ui.lineEdit.setText('')
+        self.ui.lineEdit.setStyleSheet("background-color : white")
+        self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
+
+    def minSNRupdate(self):
+        self.PROMINENCE = self.ui.spinBoxminSNR.value()
+        self.ui.spinBoxminSNR_ScannerTab.setProperty("value", self.PROMINENCE)
+
+    def minSNRupdate_ScannerTab(self):
+        self.PROMINENCE = self.ui.spinBoxminSNR_ScannerTab.value()
+        self.ui.spinBoxminSNR.setProperty("value", self.PROMINENCE)
+        self.position = self.ui.horizontalScrollBar.value()
+        self.plot_spectrum(self,self.position)
+        #self.plot_spectrum_evth()
+
+    def set_baselineoffset(self):        
+        self.Baselineoffset = self.ui.spinBoxminBaselineoffset.value()
+        self.ui.label_6.setText("Baseline Offset:" + str(self.ui.spinBoxminBaselineoffset.value()))
+        self.position = self.ui.horizontalScrollBar.value()
+        self.plot_spectrum(self,self.position)
+        #.plot_spectrum_evth()
+
+    def activate_WAVEDIT(self):
+        self.show()
+        if self.ui.radioButton_WAVEDIT.isChecked() is True:
+                    self.ui.tableWidget.setEnabled(True)
+                    self.ui.tableWidget_starttime.setEnabled(True)
+                    self.ui.tableWidget_3.setEnabled(True)      
+        else:
+                    self.ui.tableWidget.setEnabled(False)
+                    self.ui.tableWidget_starttime.setEnabled(False)
+                    self.ui.tableWidget_3.setEnabled(False)
 
     def ann_spectrum(self,dummy,data):
         """
@@ -153,9 +271,13 @@ class WizardGUI(QMainWindow):
         datax = freq
         datay = 20*np.log10(spr)
         # filter out all data below the baseline; baseline = moving median
-        # filter kernel is 1/self.FILTERKERNEL of the spectrum size
+        # filter kernel is self.FILTERKERNEL % of the spectral span
         datay_filt = datay
-        databasel = sig.medfilt(datay,int(N/self.FILTERKERNEL))
+        kernel_length = int(N*self.FILTERKERNEL/100)
+        # kernel length must be odd integer
+        if (kernel_length % 2) == 0:
+            kernel_length += 1
+        databasel = sig.medfilt(datay,kernel_length)
         datay_filt[datay_filt < databasel] = databasel[datay_filt < databasel]         
         # find all peaks which are self.PROMINENCE dB above baseline and 
         # have a min distance of self.DELTAF and a min width of self.PEAKWIDTH
@@ -168,18 +290,23 @@ class WizardGUI(QMainWindow):
         return ret
 
     def plot_spectrum_evth(self):
-        now = datetime.now()
-        delta = now - self.timeref
+        #now = datetime.now()
+        #delta = now - self.timeref
         #print(self.timeref,now,delta)
-        if delta.total_seconds() > 1:
-            print(delta.total_seconds())
-            self.position = self.ui.horizontalScrollBar.value()
+        #if delta.total_seconds() > 1:
+        self.position = self.ui.horizontalScrollBar.value()
+        if np.abs(self.position - self.oldposition) >= 1:
+            #print(delta.total_seconds())
+            #self.position = self.ui.horizontalScrollBar.value()
             #self.ui.horizontalScrollBar.setValue(self.position)
-            self.ui.horizontalScrollBar.update()
+            #self.ui.horizontalScrollBar.update()
+            #self.ui.horizontalScrollBar.hide()
+            #self.ui.horizontalScrollBar.show()
             #time.sleep(0.1) 
-            self.SigToolbar.emit()
-            #self.plot_spectrum(self,self.position)
-        self.timeref = datetime.now()
+            #self.SigToolbar.emit()
+            self.plot_spectrum(self,self.position)
+        self.oldposition = self.position
+        #self.timeref = datetime.now()
 
     def readsegment(self):
         """
@@ -228,7 +355,10 @@ class WizardGUI(QMainWindow):
             print('plot spectrum')
             self.horzscal = position
             print(f"scrollbar value:{self.horzscal}")
-            self.ui.horizontalScrollBar.update()
+            #self.ui.horizontalScrollBar.update()
+            #self.ui.horizontalScrollBar.hide()
+            #self.ui.horizontalScrollBar.show()
+            
             # read datablock corresponding to current sliderposition
             #TODO: correct 32 bit case
             data = self.readsegment()
@@ -237,7 +367,7 @@ class WizardGUI(QMainWindow):
             #TODO: make function for plotting data , reuse in autoscan
             datax = pdata["datax"]
             datay = pdata["datay"]
-            basel = pdata["databasel"]
+            basel = pdata["databasel"] + self.Baselineoffset
             peaklocs = pdata["peaklocs"]
             peakprops = pdata["peakprops"]
             # create axis, clear old one and plot data
@@ -248,14 +378,20 @@ class WizardGUI(QMainWindow):
             self.ax.plot(datax,basel, '-', color = "C2")
             self.ax.set_xlabel('frequency (Hz)')
             self.ax.set_ylabel('amplitude (dB)')
-            self.ax.vlines(x=datax[peaklocs], ymin=datay[peaklocs] - peakprops["prominences"],
+            # self.ax.vlines(x=datax[peaklocs], ymin=datay[peaklocs] - peakprops["prominences"],
+            #     ymax = datay[peaklocs], color = "C1")
+            self.ax.vlines(x=datax[peaklocs], ymin = basel[peaklocs],
                 ymax = datay[peaklocs], color = "C1")
             self.ax.hlines(y=peakprops["width_heights"], xmin=datax[peakprops["left_ips"].astype(int)],
                 xmax=datax[peakprops["right_ips"].astype(int)], color = "C1")
             self.canvas.draw()
-            print('end refreshing canvas')
+
+            #display ev<luation time
+            displtime = str(self.rectime + (self.recstop-self.rectime)*self.horzscal/1000)
+            self.ui.lineEdit_2.setText('Evaluation time: '+ displtime + ' UTC')
 
             self.plotcompleted = True
+            
             #if self.autoscan_active == True:
                 #self.autoscan()
 
@@ -268,7 +404,7 @@ class WizardGUI(QMainWindow):
 
     def autoscan(self):
         """scan through the recording, plot spectra and calculate mean peak info
-            in tab 'scanner'
+            in tab 'scanner' as well as SNR
         :param : none
         :type : none
         :raises [ErrorType]: [ErrorDescription]
@@ -277,20 +413,21 @@ class WizardGUI(QMainWindow):
         """
         self.ui.label.setText("Status: Scan spectra for prominent TX peaks")
         print('autoscan')
-        self.autoscan_active = True
-        #if True:
-        # TODO: inactivate and reactivate Auto Button, Scrollbar
-        # TODO: is Auto Button necessary
-        self.ui.pushButtonAutoscan.setEnabled(False)
+        #######CHECK   self.autoscan_active = True
+        self.scan_deactivate()
+        self.ui.pushButton_Scan.setEnabled(False)
         self.ui.horizontalScrollBar.setEnabled(False)
+        self.NUMSNAPS = self.ui.spinBoxNumScan.value()
+        self.PROMINENCE = self.ui.spinBoxminSNR.value()
+        self.annot = [dict() for x in range(self.NUMSNAPS)]
         for self.autoscan_ix in range(self.NUMSNAPS+1):
             #set scrollbar to position
             print(f"autoindex:{self.autoscan_ix}")
             self.position = int(np.floor(self.autoscan_ix/self.NUMSNAPS*1000))
             self.horzscal = self.position
             if self.autoscan_ix > self.NUMSNAPS-1:
-                self.autoscan_ix = 0  ##??????????? necessary
-                self.autoscan_active = False  ####?????????? necessary
+                self.autoscan_ix = 0  #??????????? necessary
+                self.autoscan_active = False  #?????????? necessary
                 plt.close()
             else:
                 print(f"autoindex:{self.autoscan_ix}")
@@ -301,7 +438,12 @@ class WizardGUI(QMainWindow):
                 #self.annot[self.autoscan_ix]["PKS"] = datax[pdata["peaklocs"]]
                 peakprops = pdata["peakprops"]
                 # TODO: prominences of highest peak are wrong !!! acc to def of prominence
-                self.annot[self.autoscan_ix]["SNR"] = peakprops["prominences"]
+                #self.annot[self.autoscan_ix]["SNR"] = peakprops["prominences"]
+                peaklocs = pdata["peaklocs"]
+                datay = pdata["datay"]
+                basel = pdata["databasel"] + self.Baselineoffset
+                self.annot[self.autoscan_ix]["SNR"] = datay[peaklocs] - basel[peaklocs]
+
                 #collect all peaks which have occurred at least once in an array
                 self.locs_union = np.union1d(self.locs_union, self.annot[self.autoscan_ix]["PKS"])
                 self.freq_union = np.union1d(self.freq_union, self.annot[self.autoscan_ix]["FREQ"][self.annot[self.autoscan_ix]["PKS"]])
@@ -311,7 +453,14 @@ class WizardGUI(QMainWindow):
                 plt.plot(pdata["datax"],pdata["datay"])
                 plt.show()
                 plt.pause(0.001)
-        
+        # purge self.locs.union and remove elements the frequencies of which are
+        # within 1 kHz span 
+        uniquefreqs = pd.unique(np.round(self.freq_union/1000))
+        xyi, x_ix, y_ix = np.intersect1d(uniquefreqs, np.round(self.freq_union/1000), return_indices=True)
+
+        self.locs_union = self.locs_union[y_ix]
+        self.freq_union = self.freq_union[y_ix]
+
         meansnr = np.zeros(len(self.locs_union))
         minsnr = 1000*np.ones(len(self.locs_union))
         maxsnr = -1000*np.ones(len(self.locs_union))
@@ -333,7 +482,7 @@ class WizardGUI(QMainWindow):
         # collect cumulative info in a dictionary and write the info to the annotation yaml file 
         self.annotation = {}
         self.annotation["MSNR"] = meansnr/self.NUMSNAPS
-        self.annotation["FREQ"] = np.round(self.freq_union/1000) ##### signifikante Stellen
+        self.annotation["FREQ"] = np.round(self.freq_union/1000) # signifikante Stellen
         yamldata = [dict() for x in range(len(self.annotation["FREQ"]))]
 
         for ix in range(len(self.annotation["FREQ"])):
@@ -343,18 +492,18 @@ class WizardGUI(QMainWindow):
         if os.path.isdir(self.my_dirname + '/' + self.my_filename) == False:
             os.mkdir(self.my_dirname + '/' + self.my_filename)
 
-        annotation_filename = self.my_dirname + '/' + self.my_filename + '/snrannotation.yaml'
-        stream = open(annotation_filename, "w")
+        #self.annotation_filename = self.my_dirname + '/' + self.my_filename + '/snrannotation.yaml'
+        #TODO: check if file exists
+        stream = open(self.annotation_filename, "w")
         yaml.dump(yamldata, stream)
         stream.close()
-        self.ui.pushButtonAutoscan.setEnabled(True)
         self.ui.horizontalScrollBar.setEnabled(True)
         self.ann_stations()
         return True
 
     def ann_stations(self):
-        stations_filename = self.my_dirname + '/' + self.my_filename + '/stations_list.yaml'
-        if os.path.exists(stations_filename) == False:
+        self.stations_filename = self.my_dirname + '/' + self.my_filename + '/stations_list.yaml'
+        if os.path.exists(self.stations_filename) == False:
 
             #TODO: necessary for final version ?
             listitem_ix = 1
@@ -377,10 +526,10 @@ class WizardGUI(QMainWindow):
                 else:
                     closed.append(datetime.strptime(str(dummytime), '%Y-%m-%d %H:%M:%S'))
                 freq.append(float(T.freq.iloc[ix]))
-            #print("stations annotation base created")  ## table with freq and closed columns built
+            #print("stations annotation base created")  # table with freq and closed columns built
             self.ui.label.setText("Status: annotate peaks and write stations list to yaml file")
 
-            with open(stations_filename, 'w', encoding='utf-8') as f:
+            with open(self.stations_filename, 'w', encoding='utf-8') as f:
                 # TODO: rectime prüfen, was wenn dummy eintrag ?
                 # Laufe durch alle Peak-Frequenzen des Spektrums mit index ix
                 for ix in range(len(self.locs_union)):
@@ -422,7 +571,7 @@ class WizardGUI(QMainWindow):
                                 #wenn NICHT (geschlossen oder recording-time >= explizite Schließzeit in der Spalte closed) --> Sender ist Kandidat
                                 # Progeamm und Station aus MWTabelle übernehmen
                                 # Land country aus MWTabelle übernehmen
-                                station = '{}##{}##'.format(curr_programme, curr_station)
+                                station = '{}{}'.format(curr_programme, curr_station)
                                 tx_site = curr_tx_site
                                 country = T.country.iloc[ix2]
                                 if country in cs:  # falls cs bereits das aktuelle Land innerhalb der aktuellen Liste ixf der Einträge zu Frequenz ix beinhaltet 
@@ -441,6 +590,7 @@ class WizardGUI(QMainWindow):
                                     yaml_ix += 1
                         # for this ixf (i.e. this peak frequency) write all entries of the sorted table
                         for ix2 in range(len(sortedtable)):
+                            
                             country_string = '  country' +str(ix2) + ': "{}"\n'.format(sortedtable[ix2]['country' + str(ix2)])
                             programme_string = '  programme' +str(ix2) + ': "{}"\n'.format(sortedtable[ix2]['station' + str(ix2)])
                             tx_site_string = '  tx-site' +str(ix2) + ': "{}"\n'.format(sortedtable[ix2]['tx_site' + str(ix2)])
@@ -460,20 +610,47 @@ class WizardGUI(QMainWindow):
                         f.write('  country0: "not identified"\n')
                         f.write('  programme0: "not identified"\n')
                         f.write('  tx-site0: "not identified"\n')
-                    #f.write('  ####################################################\n')
                     self.ui.progressBar_2.setProperty("value", int(progress))
+                    self.ui.progressBar_2.update()
+                    self.ui.progressBar_2.hide()
+                    self.ui.progressBar_2.show()
                     time.sleep(0.1)
             #memorize status in status-yaml: curent frequency index = 0 and annotation not completed
-            status_filename = self.my_dirname + '/' + self.my_filename + '/status.yaml'
+            #self.status_filename = self.my_dirname + '/' + self.my_filename + '/status.yaml'
             status = {}
             status["freqindex"] = 0
             status["annotated"] = False
-            stream = open(status_filename, "w")
+            stream = open(self.status_filename, "w")
             yaml.dump(status, stream)
             stream.close()
 
             self.ui.progressBar_2.setProperty("value", 0)
+            self.scan_completed()
+            #self.ui.pushButton_Scan.setStyleSheet("background-color : rgb(170, 255, 127)")
+            #self.ui.pushButtonAnnotate.setEnabled(True)
         else:
+            self.scan_completed()
+            try:
+                stream = open(self.status_filename, "r")
+                status = yaml.safe_load(stream)
+                stream.close()
+            except:
+                print("cannot get status")
+                return False 
+            
+            if status["annotated"] == True:
+                self.annotation_completed()
+            else:
+                freq_ix = status["freqindex"]
+                try:
+                    stream = open(self.stations_filename, "r", encoding="utf8")
+                    self.stations = yaml.safe_load(stream)
+                    stream.close()
+                except:
+                    print("cannot get stations list")
+                    return False
+                self.ui.lineEdit.setText('Frequency: ' + str(self.stations[freq_ix]['frequency'] + ' kHz'))
+                self.ui.lineEdit.setFont(QFont('MS Shell Dlg 2', 12))
             self.interactive_station_select()
 
 
@@ -483,57 +660,50 @@ class WizardGUI(QMainWindow):
 
         """
         self.ui.Annotate_listWidget.clear()
-        stations_filename = self.my_dirname + '/' + self.my_filename + '/stations_list.yaml'
-        status_filename = self.my_dirname + '/' + self.my_filename + '/status.yaml'
+        ### reading again the yaml is inefficient: could be passed from ann_stations
         try:
-            stream = open(status_filename, "r")
+            stream = open(self.status_filename, "r")
             status = yaml.safe_load(stream)
             stream.close()
         except:
             print("cannot get status")
             return False 
         try:
-            stream = open("stations_list.yaml", "r", encoding="utf8")
-            stations = yaml.safe_load(stream)
+            stream = open(self.stations_filename, "r", encoding="utf8")
+            self.stations = yaml.safe_load(stream)
             stream.close()
         except:
             print("cannot get stations list")
             return False
         
         freq_ix = status["freqindex"] # read last frequency index which was treated in interactive list checking
-        plen = (len(stations[freq_ix])-2)/3 #number of station candidates
+        if freq_ix >= len(self.stations):
+            self.annotation_completed()
+            status["annotated"] = True
+            stream = open(self.status_filename, "w")
+            yaml.dump(status, stream)
+            stream.close()
+            return False
+        plen = int((len(self.stations[freq_ix])-2)/3) #number of station candidates
+        self.ui.lineEdit.setText('Frequency: ' + str(self.stations[freq_ix]['frequency'] + ' kHz'))
+        time.sleep(0.1)
         
         for ix2 in range(plen):
-            country_string = stations[freq_ix]['country' + str(ix2)]
-            programme_string = stations[freq_ix]['programme' + str(ix2)]
-            tx_site_string = stations[freq_ix]['tx-site' + str(ix2)]
-            #item = self.Annotate_listWidget.item(1)
-            #item.setText("TESTITEM2"))
+            country_string = self.stations[freq_ix]['country' + str(ix2)]
+            programme_string = self.stations[freq_ix]['programme' + str(ix2)]
+            tx_site_string = self.stations[freq_ix]['tx-site' + str(ix2)]
             item = QtWidgets.QListWidgetItem()
             self.ui.Annotate_listWidget.addItem(item)
             item = self.ui.Annotate_listWidget.item(ix2)
             item.setText(country_string.strip('\n') + ' | ' + programme_string.strip('\n') + ' | ' + tx_site_string.strip('\n'))
             time.sleep(0.1)
-        
-        QMessageBox.information(self, "ListWidget", "next frequency tabulated")
-        print(f"table edited : {str(freq_ix)}")
-        #memorize status and advance freq_ix
-        if freq_ix < len(stations):
-            freq_ix += 1
-            status["freqindex"] = freq_ix
-            status["annotated"] = False
-            stream = open(status_filename, "w")
-            yaml.dump(status, stream)
-            stream.close()
-        else:
-            status["freqindex"] = freq_ix
-            status["annotated"] = True
-            stream = open(status_filename, "w")
-            yaml.dump(status, stream)
-            stream.close()
-
+        self.ui.pushButtonDiscard.setEnabled(True)
+        #self.ui.lineEdit.setText('Frequency: ' + str(self.stations[freq_ix]['frequency'] + ' kHz'))
+        #QMessageBox.information(self, "ListWidget", "select station by clicking on respective table entry, scroll down if appropriate")
+        #print(f"table edited : {str(freq_ix)}")
         #at the end leave and wait for advancement by button >
 
+    def ListClicked(self,item):
         # item = QtWidgets.QListWidgetItem()
         # brush = QtGui.QBrush(QtGui.QColor(170, 255, 127))
         # brush.setStyle(QtCore.Qt.Dense3Pattern)
@@ -542,20 +712,104 @@ class WizardGUI(QMainWindow):
         # brush.setStyle(QtCore.Qt.NoBrush)
         # item.setForeground(brush)
         # self.Annotate_listWidget.addItem(item)
+            
+        #memorize status and advance freq_ix
+        try:
+            stream = open(self.status_filename, "r")
+            status = yaml.safe_load(stream)
+            stream.close()
+        except:
+            print("cannot get status")
+            return False 
+        freq_ix = status["freqindex"] # read last frequency index which was treated in interactive list checking
+        if freq_ix < len(self.stations):
+            #read index of clicked row and fetch associated content from stations list
+            cr_ix = self.ui.Annotate_listWidget.currentRow()
+            country_string = '  country: "{}"\n'.format(self.stations[freq_ix]['country' + str(cr_ix)])
+            programme_string = '  programme: "{}"\n'.format(self.stations[freq_ix]['programme' + str(cr_ix)])
+            tx_site_string = '  tx-site: "{}"\n'.format(self.stations[freq_ix]['tx-site' + str(cr_ix)])
+            self.ui.lineEdit.setText('Frequency: ' + str(self.stations[freq_ix]['frequency']) + ' kHz | ' + country_string + ' | ' + programme_string)
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Question)
+            msg.setText("station selected")
+            msg.setInformativeText("Station selected; Append to annotation list ?")
+            msg.setWindowTitle("annotate")
+            msg.addButton('remove from record',QMessageBox.AcceptRole)
+            msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            msg.setDefaultButton(QMessageBox.Yes)
+            msg.buttonClicked.connect(self.popup)
+            ret = msg.exec_()
 
-    def activate_WAVEDIT(self):
-        self.show()
-        if self.ui.radioButton_WAVEDIT.isChecked() is True:
-                    self.ui.tableWidget.setEnabled(True)
-                    self.ui.tableWidget_starttime.setEnabled(True)
-                    self.ui.tableWidget_3.setEnabled(True)      
+            if self.yesno == "&Yes":
+                #cr_ix = self.ui.Annotate_listWidget.currentRow()
+                #print(f"you clicked Item : {item.text()[9]}")
+                with open(self.cohiradia_metadata_filename, 'a+', encoding='utf-8') as f:
+                    # append selected station to cohiradia annotation file
+                    f.write('- frequency: "{}"\n'.format(self.stations[freq_ix]['frequency']))
+                    f.write('  snr: "{}"\n'.format(self.stations[freq_ix]['snr']))
+                    f.write(country_string)
+                    f.write(programme_string)
+                    f.write(tx_site_string)
+                    self.ui.Annotate_listWidget.clear()
+                freq_ix += 1
+                status["freqindex"] = freq_ix
+                status["annotated"] = False
+                stream = open(self.status_filename, "w")
+                yaml.dump(status, stream)
+                stream.close()
+                self.interactive_station_select()
+                return True
+            else:
+                if self.yesno == '&No':
+                    return False
+                    #TODO: set button Annotate green
+                else:
+                    #Discard this frequency, advance freq counter, do not write to cohiradia annotation
+                    freq_ix += 1
+                    status["freqindex"] = freq_ix
+                    status["annotated"] = False
+                    stream = open(self.status_filename, "w")
+                    yaml.dump(status, stream)
+                    stream.close()
+                    self.interactive_station_select()
+                    return False
+        # end of stationslist reached
+        status["freqindex"] = freq_ix
+        status["annotated"] = True
+        stream = open(self.status_filename, "w")
+        yaml.dump(status, stream)
+        stream.close()
+        self.annotation_completed()
+
+    def discard_annot_line(self):
+        try:
+            stream = open(self.status_filename, "r")
+            status = yaml.safe_load(stream)
+            stream.close()
+        except:
+            return False 
+        freq_ix = status["freqindex"] # read last frequency index which was treated in interactive list checking
+        #Discard this frequency, advance freq counter, do not write to cohiradia annotation
+        freq_ix += 1
+        status["freqindex"] = freq_ix
+        status["annotated"] = False
+        stream = open(self.status_filename, "w")
+        yaml.dump(status, stream)
+        stream.close()
+        self.interactive_station_select()
+        return False
+
+    def open_template_file(self):
+        print(f"current path:{self.standardpath}")
+        self.open_template_flag = True
+        if self.FileOpen() is False:
+            self.fileopened = False
+            return False
         else:
-                    self.ui.tableWidget.setEnabled(False)
-                    self.ui.tableWidget_starttime.setEnabled(False)
-                    self.ui.tableWidget_3.setEnabled(False)
+            self.fileopened = True
 
     def open_file(self):
-        print(f"current path:{self.standardpath}")
+        self.open_template_flag = False
         try:
             stream = open("config_wizard.yaml", "r")
             self.metadata = yaml.safe_load(stream)
@@ -563,7 +817,9 @@ class WizardGUI(QMainWindow):
             self.ismetadata = True
         except:
             print("cannot get metadata")
-
+        
+        self.ui.spinBoxminSNR_ScannerTab.setProperty("value", self.PROMINENCE)
+        
         if self.fileopened is True:
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Question)
@@ -607,18 +863,6 @@ class WizardGUI(QMainWindow):
         item = self.ui.Annotate_listWidget.item(1)
         item.setText("TESTITEM2 changed")
 
-    def ListClicked(self,item):
-        QMessageBox.information(self, "ListWidget", "You clicked: "+item.text())
-        print(f"you clicked Item : {item.text()[9]}")
-
-    # widget->addItems(strList);
-    #PyQt5.QtCore
-    # QListWidgetItem* item = 0;
-    # for(int i = 0; i < widget->count(); ++i){
-    #     item = widget->item(i);
-    #     item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-    #     item->setCheckState(Qt::Unchecked);
-
     def FileOpen(self):
         '''
         Purpose: 
@@ -628,53 +872,70 @@ class WizardGUI(QMainWindow):
             (3) present recording parameters in info fields
         Returns: True, if successful, False otherwise
         '''
-        if self.ismetadata == False:
-            filename =  QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Open data file"
-                                                              , self.standardpath, "*.wav")
+        self.reset_GUI()
+        filters = "SDR wav files (*.wav);;Raw IQ (*.dat *.raw )"
+        selected_filter = "SDR wav files (*.wav)"
+        if self.open_template_flag == False:
+            if self.ismetadata == False:
+                filename =  QtWidgets.QFileDialog.getOpenFileName(self,
+                                                                "Open data file"
+                                                                , self.standardpath, filters, selected_filter)
+            else:
+                print('open file with last path')
+                filename =  QtWidgets.QFileDialog.getOpenFileName(self,
+                                                                "Open data file"
+                                                                ,self.metadata["last_path"] , filters, selected_filter)
+            self.f1 = filename[0]    
         else:
-            print('open file with last path')
-            filename =  QtWidgets.QFileDialog.getOpenFileName(self,
-                                                              "Open data file"
-                                                              ,self.metadata["last_path"] , "*.wav")
-
-        self.f1 = filename[0]  # ## see Recordingbtton
+            filename = self.standardpath + '/templatewavheader.wav'
+            self.open_template_flag = False
+            self.f1 = filename
+        
         if not self.f1:
             return False
 
         self.my_dirname = os.path.dirname(self.f1)
         self.my_filename, ext = os.path.splitext(os.path.basename(self.f1))
-        #self.ui.lineEdit_Filename.setText(self.my_filename)
+        self.stations_filename = self.my_dirname + '/' + self.my_filename + '/stations_list.yaml'
+        self.status_filename = self.my_dirname + '/' + self.my_filename + '/status.yaml'
+        self.annotation_filename = self.my_dirname + '/' + self.my_filename + '/snrannotation.yaml'
+        self.cohiradia_metadata_filename = self.my_dirname + '/' + self.my_filename + '/cohiradia_metadata.yaml'
+        
+        self.annotation_deactivate()
+        self.scan_deactivate()
+        self.ui.pushButtonDiscard.setEnabled(False)
+        
         if ext == ".dat": 
             self.filetype = "dat"
+            self.ui.tab_2.setEnabled(False)
+            self.ui.tab_3.setEnabled(False)
+            self.ui.tab_4.setEnabled(False)
+            ##TODO: consistency check wavtables
+            ##TODO: write current wavheader to start of dat file
+            self.ui.label_8.setEnabled(True)
+            self.ui.pushButton_InsertHeader.setEnabled(True)
 
+            print('dat header writing currently not yet fully supported')
         else:
             if ext == ".wav":
                 self.filetype = "wav"
+                self.ui.tab_2.setEnabled(True)
+                self.ui.tab_3.setEnabled(True)
+                self.ui.tab_4.setEnabled(True)
+                self.ui.label_8.setEnabled(False)
+                self.ui.pushButton_InsertHeader.setEnabled(False)
             else:
-                ###TODO error dialogue
+                #TODO error dialogue
                 print("Error , neither dat nor wav format")
 
             if self.filetype == "dat" and self.filenameparams_extract() == False: # namecheck only if dat --> makes void all wav-related operation sin filenameextract
-                # logging.error('filename extraction failed')
-                return False
-            
-            if self.filetype == "dat":
-                #self.fileHandle = open(self.f1, 'rb')
-                #self.filesize = os.path.getsize(self.f1)
                 print('dat files not yet supported')
                 return False
-
+            
             else:
                 # TODO: open with PERSEUS header if appropriate
                 # open with SDRUno fileheader
-                #self.fileHandle = open(self.f1, 'rb')
-                #self.filesize = os.path.getsize(self.f1)
-                #print(self.filesize)
                 self.wavheader = WAVheader_tools.get_sdruno_header(self)
-                print('waveheader reached')
-                
-                # TODO: if SDR_ChunkID == 'auxi' else if 'rcvr' --> Perseus_extract self.extract_startstoptimes_rcvr(self.wavheader)
                 self.next_filename = self.extract_startstoptimes_auxi(self.wavheader)
                 self.ifreq = self.wavheader['centerfreq']
                 self.irate = self.wavheader['nSamplesPerSec']
@@ -699,51 +960,8 @@ class WizardGUI(QMainWindow):
                         msg.setWindowTitle("SDR TYPE UNKNOWN")
                         msg.exec_()
                         return False
-                if self.sdrtype == 'AUXI':
-                    #read out SDRUno specific data            
-
-                    starttime = self.wavheader['starttime']
-                    stoptime = self.wavheader['stoptime']
-                    self.rectime = datetime(starttime[0],starttime[1],starttime[3],starttime[4],starttime[5],starttime[6])
-                    start_str = str(self.rectime)
-                    print(start_str)
-                    
-                else:
-                    starttime = ['x', 'x', 'x', 'x', 'x', 'x','x','x']
-                    stoptime = starttime
-                
-                ###Einträge der Tabelle 1 nur Integers
-                metastring1 = [self.wavheader['filesize'], self.wavheader['sdr_nChunkSize']]
-                metastring1.append(self.wavheader['wFormatTag'])
-                metastring1.append(self.wavheader['nChannels'])
-                metastring1.append(self.wavheader['nSamplesPerSec'])
-                metastring1.append(self.wavheader['nAvgBytesPerSec'])
-                metastring1.append(self.wavheader['nBlockAlign'])
-                metastring1.append(self.wavheader['nBitsPerSample'])
-                metastring1.append(self.wavheader['centerfreq'])
-                metastring1.append(self.wavheader['data_nChunkSize'])
-                metastring1.append(self.wavheader['ADFrequency'])
-                metastring1.append(self.wavheader['IFFrequency'])
-                metastring1.append(self.wavheader['Bandwidth'])
-                metastring1.append(self.wavheader['IQOffset'])               
-                for ix in range(0,14):
-                    self.ui.tableWidget.item(ix, 0).setData(0,metastring1[ix])
-        
-                # write start/stopttime info to table 2 (integers)
-                #self.ui.tableWidget.item(9, 0).setData(0,float(12.3)) #int(12)
-                #starttime.pop(2) # remove unused element from SDRUno Starttime/stoptime
-                #stoptime.pop(2) # remove unused element from SDRUno Starttime/stoptime
-                for ix in range(0,8):
-                    self.ui.tableWidget_starttime.item(ix, 0).setData(0,starttime[ix])
-                    self.ui.tableWidget_starttime.item(ix, 1).setData(0,stoptime[ix])
-                    #Anmerkung: Diese Tabelle enthäl nur Integers
-
-                # write other info to table 3 (strings)                    
-                self.ui.tableWidget_3.item(2, 0).setText(start_str)
-                self.ui.tableWidget_3.item(1, 0).setText(str(self.wavheader['sdrtype_chckID']))
-                self.ui.tableWidget_3.item(0, 0).setText(str(self.wavheader['nextfilename']))
-                self.ui.tableWidget_3.item(3, 0).setText(str(self.wavheader['data_ckID']))
- 
+                self.fill_wavtable()
+            
             # TODO rootpath for config file ! 
             # TODO: append metadata instead of new write
             self.metadata = {"last_path": self.my_dirname}
@@ -751,14 +969,64 @@ class WizardGUI(QMainWindow):
             yaml.dump(self.metadata, stream)
             stream.close()
 
-            return True
-
+            self.stations_filename = self.my_dirname + '/' + self.my_filename + '/stations_list.yaml'
+            if os.path.exists(self.stations_filename) == True:
+                self.scan_completed()
+                try:
+                    stream = open(self.status_filename, "r")
+                    status = yaml.safe_load(stream)
+                    stream.close()
+                except:
+                    print("cannot get status")
+                    return False 
+                if status["annotated"] == True:
+                    self.annotation_completed()
+                else:
+                    self.annotation_activate()
+            else:
+                self.scan_activate()
         self.fileopened = True
-        #self.curr_time = self.ui.lineEditCurTime.text()
-        #self.ui.lineEditCurTime.setEnabled(True)
-        # logging.info('Successful fileopen' + self.f1)
-        #self.fileHandle.close()
+        self.ui.label_6.setText("Bseline Offset:" + str(self.ui.spinBoxminBaselineoffset.value()))
         return True
+
+    def fill_wavtable(self):
+        if self.sdrtype == 'AUXI':
+            starttime = self.wavheader['starttime']
+            stoptime = self.wavheader['stoptime']
+            self.rectime = datetime(starttime[0],starttime[1],starttime[3],starttime[4],starttime[5],starttime[6])
+            self.recstop = datetime(stoptime[0],stoptime[1],stoptime[3],stoptime[4],stoptime[5],stoptime[6])
+            start_str = str(self.rectime)
+            print(start_str)
+            
+        else:
+            starttime = ['x', 'x', 'x', 'x', 'x', 'x','x','x']
+            stoptime = starttime
+        
+        ###Einträge der Tabelle 1 nur Integers
+        metastring1 = [self.wavheader['filesize'], self.wavheader['sdr_nChunkSize']]
+        metastring1.append(self.wavheader['wFormatTag'])
+        metastring1.append(self.wavheader['nChannels'])
+        metastring1.append(self.wavheader['nSamplesPerSec'])
+        metastring1.append(self.wavheader['nAvgBytesPerSec'])
+        metastring1.append(self.wavheader['nBlockAlign'])
+        metastring1.append(self.wavheader['nBitsPerSample'])
+        metastring1.append(self.wavheader['centerfreq'])
+        metastring1.append(self.wavheader['data_nChunkSize'])
+        metastring1.append(self.wavheader['ADFrequency'])
+        metastring1.append(self.wavheader['IFFrequency'])
+        metastring1.append(self.wavheader['Bandwidth'])
+        metastring1.append(self.wavheader['IQOffset'])               
+        for ix in range(0,14):
+            self.ui.tableWidget.item(ix, 0).setData(0,metastring1[ix])
+        for ix in range(0,8):
+            self.ui.tableWidget_starttime.item(ix, 0).setData(0,starttime[ix])
+            self.ui.tableWidget_starttime.item(ix, 1).setData(0,stoptime[ix])
+
+        # write other info to table 3 (strings)                    
+        self.ui.tableWidget_3.item(2, 0).setText(start_str)
+        self.ui.tableWidget_3.item(1, 0).setText(str(self.wavheader['sdrtype_chckID']))
+        self.ui.tableWidget_3.item(0, 0).setText(str(self.wavheader['nextfilename']))
+        self.ui.tableWidget_3.item(3, 0).setText(str(self.wavheader['data_ckID']))
 
     def write_template_wavheader(self):
         #TODO: check if data in fields are compatible with format type
@@ -957,9 +1225,7 @@ if __name__ == '__main__':
     if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
         QtWidgets.QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
-    
     app = QApplication([])
-
     win = WizardGUI()
     #win.setupUi(MyWizard)
 #    app.aboutToQuit.connect(win.stop_worker)    #graceful thread termination on app exit

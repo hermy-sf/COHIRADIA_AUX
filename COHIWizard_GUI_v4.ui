@@ -6,16 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1913</width>
-    <height>1107</height>
+    <width>1163</width>
+    <height>889</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
+  <property name="toolTip">
+   <string>generate annotation basis by comparing MWLIST, display candidates at next frequency</string>
+  </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout">
-    <item>
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
      <widget class="QTabWidget" name="tabWidget">
       <property name="enabled">
        <bool>true</bool>
@@ -29,13 +32,13 @@
        <bool>false</bool>
       </property>
       <property name="toolTip">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;edit the wav header of an SDR file&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Chose the wanted toolkit&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
       <property name="autoFillBackground">
        <bool>true</bool>
       </property>
       <property name="currentIndex">
-       <number>3</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -47,396 +50,674 @@
        <attribute name="title">
         <string>WAV Header</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout">
-        <item row="0" column="0" rowspan="2">
-         <widget class="QTableWidget" name="tableWidget">
-          <attribute name="horizontalHeaderDefaultSectionSize">
-           <number>400</number>
-          </attribute>
-          <row>
+       <widget class="QWidget" name="gridLayoutWidget_3">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>20</y>
+          <width>1121</width>
+          <height>751</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="2" column="2">
+          <widget class="QPushButton" name="pushButton_InsertHeader">
            <property name="text">
-            <string>Filesize</string>
+            <string>Insert Header</string>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>sdr_nChunksize</string>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QRadioButton" name="radioButton_WAVEDIT">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>wFormatTag</string>
+           <property name="toolTip">
+            <string>make this table editable by clicking 'edit'</string>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>nChannels</string>
+           <property name="autoFillBackground">
+            <bool>true</bool>
            </property>
-          </row>
-          <row>
            <property name="text">
-            <string>Sample rate</string>
+            <string>EDIT</string>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>bytes per second</string>
+          </widget>
+         </item>
+         <item row="0" column="0" rowspan="3">
+          <widget class="QTableWidget" name="tableWidget">
+           <property name="toolTip">
+            <string>make this table editable by clicking 'edit'</string>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>nBlockalign</string>
+           <attribute name="horizontalHeaderDefaultSectionSize">
+            <number>400</number>
+           </attribute>
+           <row>
+            <property name="text">
+             <string>Filesize</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>sdr_nChunksize</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>wFormatTag</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>nChannels</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>Sample rate</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>bytes per second</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>nBlockalign</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>bits per sample</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>centerfreq</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>dataChunksize</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>ADFrequency</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>IFFrequency</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>Bandwidth</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>IQOffset</string>
+            </property>
+           </row>
+           <column>
+            <property name="text">
+             <string>value</string>
+            </property>
+           </column>
+           <item row="0" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="1" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="2" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="3" column="0">
+            <property name="text">
+             <string>2</string>
+            </property>
+           </item>
+           <item row="4" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="5" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="6" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="7" column="0">
+            <property name="text">
+             <string>16</string>
+            </property>
+           </item>
+           <item row="8" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="9" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="10" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="11" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="12" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="13" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QTableWidget" name="tableWidget_starttime">
+           <property name="toolTip">
+            <string>make this table editable by clicking 'edit'</string>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>bits per sample</string>
+           <attribute name="horizontalHeaderDefaultSectionSize">
+            <number>100</number>
+           </attribute>
+           <row>
+            <property name="text">
+             <string>YYYY</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>MM</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>---</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>DD</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>HH</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>mm</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>ss</string>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>ms</string>
+            </property>
+           </row>
+           <column>
+            <property name="text">
+             <string>Start</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>Stop</string>
+            </property>
+           </column>
+           <item row="0" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="0" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="1" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="1" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="2" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="2" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="3" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="3" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="4" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="4" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="5" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="5" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="6" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="6" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="7" column="0">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+           <item row="7" column="1">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QTableWidget" name="tableWidget_3">
+           <property name="toolTip">
+            <string>make this table editable by clicking 'edit'</string>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>centerfreq</string>
+           <attribute name="horizontalHeaderDefaultSectionSize">
+            <number>600</number>
+           </attribute>
+           <attribute name="horizontalHeaderMinimumSectionSize">
+            <number>50</number>
+           </attribute>
+           <attribute name="verticalHeaderDefaultSectionSize">
+            <number>37</number>
+           </attribute>
+           <row>
+            <property name="text">
+             <string>nextfilename</string>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>SDR Type</string>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>Start</string>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+           </row>
+           <row>
+            <property name="text">
+             <string>dataheader</string>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+           </row>
+           <column>
+            <property name="text">
+             <string>value</string>
+            </property>
+            <property name="font">
+             <font>
+              <pointsize>12</pointsize>
+             </font>
+            </property>
+           </column>
+           <item row="0" column="0">
+            <property name="text">
+             <string>-</string>
+            </property>
+           </item>
+           <item row="1" column="0">
+            <property name="text">
+             <string>-</string>
+            </property>
+           </item>
+           <item row="2" column="0">
+            <property name="text">
+             <string>-</string>
+            </property>
+           </item>
+           <item row="3" column="0">
+            <property name="text">
+             <string>-</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLabel" name="label_8">
+           <property name="enabled">
+            <bool>true</bool>
            </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>dataChunksize</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>ADFrequency</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>IFFrequency</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>Bandwidth</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>IQOffset</string>
-           </property>
-          </row>
-          <column>
-           <property name="text">
-            <string>value</string>
-           </property>
-          </column>
-          <item row="0" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="1" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="2" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="3" column="0">
-           <property name="text">
-            <string>2</string>
-           </property>
-          </item>
-          <item row="4" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="5" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="6" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="7" column="0">
-           <property name="text">
-            <string>16</string>
-           </property>
-          </item>
-          <item row="8" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="9" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="10" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="11" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="12" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="13" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QTableWidget" name="tableWidget_starttime">
-          <attribute name="horizontalHeaderDefaultSectionSize">
-           <number>100</number>
-          </attribute>
-          <row>
-           <property name="text">
-            <string>YYYY</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>MM</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>---</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>DD</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>HH</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>mm</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>ss</string>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>ms</string>
-           </property>
-          </row>
-          <column>
-           <property name="text">
-            <string>Start</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>Stop</string>
-           </property>
-          </column>
-          <item row="0" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="0" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="1" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="1" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="2" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="2" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="3" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="3" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="4" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="4" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="5" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="5" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="6" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="6" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="7" column="0">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-          <item row="7" column="1">
-           <property name="text">
-            <string>0</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QRadioButton" name="radioButton_WAVEDIT">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="autoFillBackground">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>EDIT</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1" colspan="2">
-         <widget class="QTableWidget" name="tableWidget_3">
-          <attribute name="horizontalHeaderDefaultSectionSize">
-           <number>600</number>
-          </attribute>
-          <attribute name="horizontalHeaderMinimumSectionSize">
-           <number>50</number>
-          </attribute>
-          <attribute name="verticalHeaderDefaultSectionSize">
-           <number>37</number>
-          </attribute>
-          <row>
-           <property name="text">
-            <string>nextfilename</string>
+           <property name="palette">
+            <palette>
+             <active>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Button">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Light">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Midlight">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Window">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>251</red>
+                 <green>255</green>
+                 <blue>203</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="NoRole">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>220</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </active>
+             <inactive>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>0</red>
+                 <green>0</green>
+                 <blue>0</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Button">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Light">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Midlight">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Window">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>251</red>
+                 <green>255</green>
+                 <blue>203</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="NoRole">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>254</green>
+                 <blue>210</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>255</red>
+                 <green>255</green>
+                 <blue>220</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </inactive>
+             <disabled>
+              <colorrole role="WindowText">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Button">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Light">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Midlight">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Base">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="Window">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="NoRole">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+              <colorrole role="ToolTipBase">
+               <brush brushstyle="SolidPattern">
+                <color alpha="255">
+                 <red>234</red>
+                 <green>234</green>
+                 <blue>234</blue>
+                </color>
+               </brush>
+              </colorrole>
+             </disabled>
+            </palette>
            </property>
            <property name="font">
             <font>
              <pointsize>12</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
             </font>
            </property>
-          </row>
-          <row>
+           <property name="autoFillBackground">
+            <bool>true</bool>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">rgb(255, 254, 210)</string>
+           </property>
            <property name="text">
-            <string>SDR Type</string>
+            <string>Convert dat -&gt; wav by inserting current wav header</string>
            </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>Start</string>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-          </row>
-          <row>
-           <property name="text">
-            <string>dataheader</string>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-          </row>
-          <column>
-           <property name="text">
-            <string>value</string>
-           </property>
-           <property name="font">
-            <font>
-             <pointsize>12</pointsize>
-            </font>
-           </property>
-          </column>
-          <item row="0" column="0">
-           <property name="text">
-            <string>-</string>
-           </property>
-          </item>
-          <item row="1" column="0">
-           <property name="text">
-            <string>-</string>
-           </property>
-          </item>
-          <item row="2" column="0">
-           <property name="text">
-            <string>-</string>
-           </property>
-          </item>
-          <item row="3" column="0">
-           <property name="text">
-            <string>-</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-       </layout>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
@@ -447,166 +728,170 @@
        <attribute name="title">
         <string>Scanner</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="2">
-         <widget class="QPushButton" name="pushButtonAutoscan">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="palette">
-           <palette>
-            <active>
-             <colorrole role="Button">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>170</red>
-                <green>255</green>
-                <blue>127</blue>
-               </color>
-              </brush>
-             </colorrole>
-             <colorrole role="Midlight">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>198</red>
-                <green>194</green>
-                <blue>191</blue>
-               </color>
-              </brush>
-             </colorrole>
-            </active>
-            <inactive>
-             <colorrole role="Button">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>169</red>
-                <green>170</green>
-                <blue>163</blue>
-               </color>
-              </brush>
-             </colorrole>
-             <colorrole role="Midlight">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>198</red>
-                <green>194</green>
-                <blue>191</blue>
-               </color>
-              </brush>
-             </colorrole>
-            </inactive>
-            <disabled>
-             <colorrole role="Button">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>231</red>
-                <green>231</green>
-                <blue>223</blue>
-               </color>
-              </brush>
-             </colorrole>
-             <colorrole role="Midlight">
-              <brush brushstyle="SolidPattern">
-               <color alpha="255">
-                <red>198</red>
-                <green>194</green>
-                <blue>191</blue>
-               </color>
-              </brush>
-             </colorrole>
-            </disabled>
-           </palette>
-          </property>
-          <property name="toolTip">
-           <string>Auto scan the full recording in 25 steps</string>
-          </property>
-          <property name="autoFillBackground">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>Scan</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QScrollBar" name="horizontalScrollBar">
-          <property name="toolTip">
-           <string>move slider to browse through the record and plot spectra </string>
-          </property>
-          <property name="maximum">
-           <number>1000</number>
-          </property>
-          <property name="pageStep">
-           <number>1</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLineEdit" name="lineEdit_2">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QGraphicsView" name="graphicsView"/>
-        </item>
-       </layout>
+       <widget class="QWidget" name="gridLayoutWidget_2">
+        <property name="geometry">
+         <rect>
+          <x>9</x>
+          <y>10</y>
+          <width>1111</width>
+          <height>741</height>
+         </rect>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_4">
+         <item row="0" column="0">
+          <widget class="QLineEdit" name="lineEdit_2">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Display the spectrum at different times of the record by dragging the scrollbar</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="3">
+          <widget class="QSpinBox" name="spinBoxminSNR_ScannerTab">
+           <property name="toolTip">
+            <string>select number of steps for scanning through the spectrum and averaging SNRs</string>
+           </property>
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
+           </property>
+           <property name="value">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string> </string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0" colspan="4">
+          <widget class="QScrollBar" name="horizontalScrollBar">
+           <property name="toolTip">
+            <string>move slider to browse through the record and plot spectra </string>
+           </property>
+           <property name="maximum">
+            <number>1000</number>
+           </property>
+           <property name="pageStep">
+            <number>1</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QLabel" name="label_4">
+           <property name="toolTip">
+            <string>minimum SNR for auto-selection of peaks</string>
+           </property>
+           <property name="text">
+            <string>min SNR</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="4">
+          <widget class="QGraphicsView" name="graphicsView">
+           <property name="toolTip">
+            <string>space for spectrum plot</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QLabel" name="label_7">
+           <property name="toolTip">
+            <string>baseline offset from automated baseline</string>
+           </property>
+           <property name="text">
+            <string>baseline offset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <widget class="QSpinBox" name="spinBoxminBaselineoffset">
+           <property name="toolTip">
+            <string>select baseline offset from automated baseline</string>
+           </property>
+           <property name="minimum">
+            <number>-20</number>
+           </property>
+           <property name="maximum">
+            <number>20</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
+           </property>
+           <property name="value">
+            <number>5</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
-      <widget class="QWidget" name="tab">
+      <widget class="QWidget" name="tab_4">
        <attribute name="title">
         <string>Annotate</string>
        </attribute>
        <widget class="QWidget" name="gridLayoutWidget">
         <property name="geometry">
          <rect>
-          <x>50</x>
-          <y>40</y>
-          <width>1391</width>
-          <height>711</height>
+          <x>0</x>
+          <y>0</y>
+          <width>1121</width>
+          <height>771</height>
          </rect>
         </property>
         <layout class="QGridLayout" name="gridLayout_3">
-         <item row="7" column="0" colspan="3">
+         <item row="10" column="0" colspan="8">
           <widget class="QProgressBar" name="progressBar_2">
            <property name="value">
             <number>24</number>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
-          <widget class="QPushButton" name="pushButton_ScanAnn">
+         <item row="3" column="5">
+          <widget class="QPushButton" name="pushButton_Scan">
+           <property name="toolTip">
+            <string>Scan record, extract peaks with SNR &gt; min SNR</string>
+           </property>
            <property name="text">
-            <string>Annotate</string>
+            <string>Scan</string>
            </property>
           </widget>
          </item>
-         <item row="6" column="0" colspan="3">
+         <item row="9" column="0" colspan="8">
           <widget class="QLabel" name="label">
            <property name="text">
             <string>Status:</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
-          <widget class="QLineEdit" name="lineEdit">
+         <item row="3" column="7">
+          <widget class="QPushButton" name="pushButtonDiscard">
+           <property name="toolTip">
+            <string>ignore current table and proceed to next frequency</string>
+           </property>
            <property name="text">
-            <string>Frequency:</string>
+            <string>Discard</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="2">
-          <widget class="QPushButton" name="pushButton_2">
-           <property name="text">
-            <string>STOP</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0" colspan="3">
+         <item row="8" column="0" colspan="8">
           <widget class="QListWidget" name="Annotate_listWidget">
+           <property name="toolTip">
+            <string>space for stations list</string>
+           </property>
            <property name="verticalScrollBarPolicy">
             <enum>Qt::ScrollBarAlwaysOn</enum>
            </property>
@@ -652,6 +937,82 @@
            </item>
           </widget>
          </item>
+         <item row="3" column="3">
+          <widget class="QLabel" name="label_2">
+           <property name="toolTip">
+            <string>number of evaluation steps when scanning record for peaks</string>
+           </property>
+           <property name="text">
+            <string>#scan steps</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="4">
+          <widget class="QSpinBox" name="spinBoxNumScan">
+           <property name="toolTip">
+            <string>select number of steps for scanning through the spectrum and averaging SNRs</string>
+           </property>
+           <property name="value">
+            <number>20</number>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLabel" name="label_3">
+           <property name="toolTip">
+            <string>minimum SNR for auto-selection of peaks</string>
+           </property>
+           <property name="text">
+            <string>min SNR (dB)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="6">
+          <widget class="QPushButton" name="pushButtonAnnotate">
+           <property name="toolTip">
+            <string>assign peaks to candidates of stations</string>
+           </property>
+           <property name="text">
+            <string>Annotate</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <widget class="QSpinBox" name="spinBoxminSNR">
+           <property name="toolTip">
+            <string>select number of steps for scanning through the spectrum and averaging SNRs</string>
+           </property>
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>100</number>
+           </property>
+           <property name="singleStep">
+            <number>5</number>
+           </property>
+           <property name="value">
+            <number>10</number>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="8">
+          <widget class="QLineEdit" name="lineEdit">
+           <property name="text">
+            <string>Frequency:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="toolTip">
+            <string>baseline offset , adjustable in Tan 'Scanner'</string>
+           </property>
+           <property name="text">
+            <string>Baseline Offset: </string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </widget>
@@ -664,7 +1025,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1913</width>
+     <width>1163</width>
      <height>21</height>
     </rect>
    </property>
@@ -679,8 +1040,9 @@
     </property>
     <addaction name="separator"/>
     <addaction name="actionFile_open"/>
-    <addaction name="actionSave_header_to_template"/>
     <addaction name="actionOverwrite_header"/>
+    <addaction name="actionSave_header_to_template"/>
+    <addaction name="actionLoad_template_header"/>
    </widget>
    <addaction name="menuFile"/>
   </widget>
@@ -704,6 +1066,11 @@
   <action name="actionOverwrite_header">
    <property name="text">
     <string>Overwrite header</string>
+   </property>
+  </action>
+  <action name="actionLoad_template_header">
+   <property name="text">
+    <string>Load template header</string>
    </property>
   </action>
  </widget>
