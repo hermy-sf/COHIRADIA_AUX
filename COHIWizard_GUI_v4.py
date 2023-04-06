@@ -413,7 +413,8 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab_4, "")
         self.gridLayout_2.addWidget(self.tabWidget, 0, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = File(MainWindow)
+        #self.menubar = File(MainWindow)
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1163, 21))
         self.menubar.setObjectName("menubar")
         self.menuFile = QtWidgets.QMenu(self.menubar)
@@ -638,7 +639,7 @@ class Ui_MainWindow(object):
         self.actionSave_header_to_template.setText(_translate("MainWindow", "Save header to template"))
         self.actionOverwrite_header.setText(_translate("MainWindow", "Overwrite header"))
         self.actionLoad_template_header.setText(_translate("MainWindow", "Load template header"))
-from file import File
+#from file import File
 
 
 if __name__ == "__main__":

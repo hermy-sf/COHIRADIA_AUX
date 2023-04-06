@@ -53,17 +53,19 @@ class WizardGUI(QMainWindow):
         self.NUMSNAPS = 5 #number of segments evaluated for annotation
         self.STICHTAG = datetime(2023,2,25,0,0,0)
         self.autoscan_ix = 0
-        self.autoscan_active = False
+        #TODO: remove self.autoscan_active = False
         self.locs_union = []
         self.freq_union = []
         self.oldposition = 0
         self.open_template_flag = False
+        self.ovwrt_flag = False
         self.ui = MyWizard()
         self.ui.setupUi(self)
 
+        ## TODO: wavheader-Writing zum Button Insert Header connecten
         # connect menubar events
         self.ui.actionFile_open.triggered.connect(self.open_file)
-        self.ui.actionSave_header_to_template.triggered.connect(self.write_template_wavheader)
+        # self.ui.actionSave_header_to_template.triggered.connect(self.write_template_wavheader)
         self.ui.actionSave_header_to_template.triggered.connect(self.save_header_template)
         self.ui.actionLoad_template_header.triggered.connect(self.open_template_file)
         self.ui.actionOverwrite_header.triggered.connect(self.overwrite_header)
@@ -79,8 +81,9 @@ class WizardGUI(QMainWindow):
         self.ui.spinBoxminBaselineoffset.valueChanged.connect(self.set_baselineoffset)
         self.ui.tabWidget.setCurrentIndex(2)
         self.ui.pushButton_InsertHeader.setEnabled(False)
+        self.ui.pushButton_InsertHeader.clicked.connect(self.overwrite_header)
         self.ui.label_8.setEnabled(False)
-
+        
         # initialize some GUI elements
         self.ui.radioButton_WAVEDIT.setEnabled(True)
         self.ui.radioButton_WAVEDIT.setChecked(False)
@@ -131,9 +134,17 @@ class WizardGUI(QMainWindow):
         self.timeref = datetime.now()
 
     def reset_GUI(self):
-        #TODO: general reset for the GUI
+        """
+        reset GUI elements to their defaults, re-initialize important variables
+        code is executed after new file open
+        :param none
+        :type: none
+        :raises [ErrorType]: [ErrorDescription]
+        :return: True after completion
+        :rtype: booleal
+        """
         self.autoscan_ix = 0
-        self.autoscan_active = False
+        #TODO: remove self.autoscan_active = False
         self.locs_union = []
         self.freq_union = []
         self.oldposition = 0
@@ -240,6 +251,8 @@ class WizardGUI(QMainWindow):
         scale y-axis in dB
         calculate baseline basel from moving median filtering
         find spectral peaks (= transmitters) and calculate the corresponding properties
+        requires the following properties to exist:
+            self.DATABLOCKSIZE
         :param self: An instance of the class containing attributes such as header information and filtering parameters.
         :type self: object
         :param dummy: A dummy variable not used in the function.
@@ -290,23 +303,10 @@ class WizardGUI(QMainWindow):
         return ret
 
     def plot_spectrum_evth(self):
-        #now = datetime.now()
-        #delta = now - self.timeref
-        #print(self.timeref,now,delta)
-        #if delta.total_seconds() > 1:
+        #TODO: in dieser Form Obsolet, ersetzen !
         self.position = self.ui.horizontalScrollBar.value()
-        if np.abs(self.position - self.oldposition) >= 1:
-            #print(delta.total_seconds())
-            #self.position = self.ui.horizontalScrollBar.value()
-            #self.ui.horizontalScrollBar.setValue(self.position)
-            #self.ui.horizontalScrollBar.update()
-            #self.ui.horizontalScrollBar.hide()
-            #self.ui.horizontalScrollBar.show()
-            #time.sleep(0.1) 
-            #self.SigToolbar.emit()
-            self.plot_spectrum(self,self.position)
+        self.plot_spectrum(self,self.position)
         self.oldposition = self.position
-        #self.timeref = datetime.now()
 
     def readsegment(self):
         """
@@ -355,9 +355,6 @@ class WizardGUI(QMainWindow):
             print('plot spectrum')
             self.horzscal = position
             print(f"scrollbar value:{self.horzscal}")
-            #self.ui.horizontalScrollBar.update()
-            #self.ui.horizontalScrollBar.hide()
-            #self.ui.horizontalScrollBar.show()
             
             # read datablock corresponding to current sliderposition
             #TODO: correct 32 bit case
@@ -392,6 +389,7 @@ class WizardGUI(QMainWindow):
 
             self.plotcompleted = True
             
+            #TODO: remove 
             #if self.autoscan_active == True:
                 #self.autoscan()
 
@@ -412,7 +410,9 @@ class WizardGUI(QMainWindow):
         :rtype: none
         """
         self.ui.label.setText("Status: Scan spectra for prominent TX peaks")
-        print('autoscan')
+        #TODO: check after threading implementation if Text update is done
+        #print('autoscan')
+        #TODO: remove 
         #######CHECK   self.autoscan_active = True
         self.scan_deactivate()
         self.ui.pushButton_Scan.setEnabled(False)
@@ -427,7 +427,7 @@ class WizardGUI(QMainWindow):
             self.horzscal = self.position
             if self.autoscan_ix > self.NUMSNAPS-1:
                 self.autoscan_ix = 0  #??????????? necessary
-                self.autoscan_active = False  #?????????? necessary
+                #TODO: remove self.autoscan_active = False  #?????????? necessary
                 plt.close()
             else:
                 print(f"autoindex:{self.autoscan_ix}")
@@ -435,10 +435,7 @@ class WizardGUI(QMainWindow):
                 pdata = self.ann_spectrum(self,data)
                 self.annot[self.autoscan_ix]["FREQ"] = pdata["datax"] 
                 self.annot[self.autoscan_ix]["PKS"] = pdata["peaklocs"]
-                #self.annot[self.autoscan_ix]["PKS"] = datax[pdata["peaklocs"]]
-                peakprops = pdata["peakprops"]
-                # TODO: prominences of highest peak are wrong !!! acc to def of prominence
-                #self.annot[self.autoscan_ix]["SNR"] = peakprops["prominences"]
+                #TODO: remove: peakprops = pdata["peakprops"]
                 peaklocs = pdata["peaklocs"]
                 datay = pdata["datay"]
                 basel = pdata["databasel"] + self.Baselineoffset
@@ -505,8 +502,6 @@ class WizardGUI(QMainWindow):
         self.stations_filename = self.my_dirname + '/' + self.my_filename + '/stations_list.yaml'
         if os.path.exists(self.stations_filename) == False:
 
-            #TODO: necessary for final version ?
-            listitem_ix = 1
             # read Annotation_basis table from mwlist.org
             self.ui.label.setText("Status: read MWList table for annotation")
             MWlistname = self.standardpath + '\\MWLIST_Volltabelle.xlsx'
@@ -526,7 +521,6 @@ class WizardGUI(QMainWindow):
                 else:
                     closed.append(datetime.strptime(str(dummytime), '%Y-%m-%d %H:%M:%S'))
                 freq.append(float(T.freq.iloc[ix]))
-            #print("stations annotation base created")  # table with freq and closed columns built
             self.ui.label.setText("Status: annotate peaks and write stations list to yaml file")
 
             with open(self.stations_filename, 'w', encoding='utf-8') as f:
@@ -579,10 +573,8 @@ class WizardGUI(QMainWindow):
                                     sortedtable[cix]['station' + str(cix)] += station + '; '
                                     sortedtable[cix]['tx_site' + str(cix)] += tx_site + '; '
                                 else:
-                                # Trag ins dictionary sortedtable die Felder Station, Tx-site und country als neuen Block ein
-                                    # sortedtable.append({'station': station + '; ',
-                                    #                 'tx_site': tx_site + '; ',
-                                    #                 'country': country})
+                                # Trag ins dictionary sortedtable die Felder Station, Tx-site und country 
+                                # als neuen Block ein
                                     sortedtable.append({'station' + str(yaml_ix): station + '; ',
                                                     'tx_site' + str(yaml_ix): tx_site + '; ',
                                                     'country' + str(yaml_ix): country})
@@ -597,14 +589,6 @@ class WizardGUI(QMainWindow):
                             f.write(country_string)
                             f.write(programme_string)
                             f.write(tx_site_string)
-                            #item = self.Annotate_listWidget.item(1)
-                            #item.setText("TESTITEM2")) ######
-                            # if ix2 > listitem_ix:
-                            #     item = QtWidgets.QListWidgetItem()
-                            #     self.ui.Annotate_listWidget.addItem(item)
-                            #     listitem_ix += 1
-                            # item = self.ui.Annotate_listWidget.item(ix2)
-                            # item.setText(country_string.strip('\n') + ' | ' + programme_string.strip('\n') + ' | ' + tx_site_string.strip('\n'))
                             time.sleep(0.1)
                     else:
                         f.write('  country0: "not identified"\n')
@@ -704,15 +688,7 @@ class WizardGUI(QMainWindow):
         #at the end leave and wait for advancement by button >
 
     def ListClicked(self,item):
-        # item = QtWidgets.QListWidgetItem()
-        # brush = QtGui.QBrush(QtGui.QColor(170, 255, 127))
-        # brush.setStyle(QtCore.Qt.Dense3Pattern)
-        # item.setBackground(brush)
-        # brush = QtGui.QBrush(QtGui.QColor(0, 0, 50))
-        # brush.setStyle(QtCore.Qt.NoBrush)
-        # item.setForeground(brush)
-        # self.Annotate_listWidget.addItem(item)
-            
+
         #memorize status and advance freq_ix
         try:
             stream = open(self.status_filename, "r")
@@ -802,6 +778,7 @@ class WizardGUI(QMainWindow):
     def open_template_file(self):
         print(f"current path:{self.standardpath}")
         self.open_template_flag = True
+        
         if self.FileOpen() is False:
             self.fileopened = False
             return False
@@ -844,11 +821,41 @@ class WizardGUI(QMainWindow):
                 #print("self.fileopened called")
 
     def save_header_template(self):
-        # TODO: is this function necessary ?
+        # TODO: if the file extension is type .dat, then also rename the file appropriately
         print("save header template")
-        
+        if self.fileopened == False:
+            return False
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText("write wav header template")
+        msg.setInformativeText("you are about to overwrite the template wav header. Do you really want to proceed ?")
+        msg.setWindowTitle("overwrite template wav header")
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.buttonClicked.connect(self.popup)
+        msg.exec_()
+
+        if self.yesno == "&Yes":
+            self.ovwrt_flag = False
+            self.write_edited_wavheader()
+
     def overwrite_header(self):
         print("overwrite header")
+        if self.fileopened == False:
+            return False
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Question)
+        msg.setText("overwrite wav header")
+        msg.setInformativeText("you are about to overwrite the header of the current wav file with the values in the tables of Tab 'WAV Header'. Do you really want to proceed ?")
+        msg.setWindowTitle("overwrite")
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.buttonClicked.connect(self.popup)
+        msg.exec_()
+
+        if self.yesno == "&Yes":
+            self.ovwrt_flag = True
+            self.write_edited_wavheader()
+
+        #TODO: write backup dump header
 
     def popup(self,i):
         self.yesno = i.text()
@@ -887,9 +894,18 @@ class WizardGUI(QMainWindow):
                                                                 ,self.metadata["last_path"] , filters, selected_filter)
             self.f1 = filename[0]    
         else:
+            
             filename = self.standardpath + '/templatewavheader.wav'
-            self.open_template_flag = False
-            self.f1 = filename
+            if os.path.exists(filename) == True:
+                self.open_template_flag = False
+                self.f1 = filename
+            else:
+                msg = QMessageBox()
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("File not found")
+                msg.setInformativeText("Standard template with filename templatewavheader.wav not found in root directory, cannot proceed")
+                msg.setWindowTitle("file not found")
+                msg.exec_()
         
         if not self.f1:
             return False
@@ -910,8 +926,8 @@ class WizardGUI(QMainWindow):
             self.ui.tab_2.setEnabled(False)
             self.ui.tab_3.setEnabled(False)
             self.ui.tab_4.setEnabled(False)
-            ##TODO: consistency check wavtables
             ##TODO: write current wavheader to start of dat file
+            ## TODO: wavheader-Writing zum Button Insert Header connecten
             self.ui.label_8.setEnabled(True)
             self.ui.pushButton_InsertHeader.setEnabled(True)
 
@@ -990,6 +1006,9 @@ class WizardGUI(QMainWindow):
         return True
 
     def fill_wavtable(self):
+        """
+        fill tables on TAB wavedit with the respective values from the vaw header
+        """
         if self.sdrtype == 'AUXI':
             starttime = self.wavheader['starttime']
             stoptime = self.wavheader['stoptime']
@@ -1028,11 +1047,26 @@ class WizardGUI(QMainWindow):
         self.ui.tableWidget_3.item(0, 0).setText(str(self.wavheader['nextfilename']))
         self.ui.tableWidget_3.item(3, 0).setText(str(self.wavheader['data_ckID']))
 
-    def write_template_wavheader(self):
-        #TODO: check if data in fields are compatible with format type
-        #self.my_dirname
-        #self.standardpath
+    def check_consistency(self,item,dtype,label):
+        typetab = {"long": [-2147483647, 2147483647], "ulong": [0, 4294967295], 
+                    "short": [-32768, 32767]  , "ushort": [0, 65535],
+                    "float": [-3.4E38, 3.4E38]}
+
+        if item < typetab[dtype][0] or item > typetab[dtype][1]:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("Value error")
+            msg.setInformativeText(label + "must be of type " + dtype + ", i.e. in range " + str(typetab[dtype]) + "\n Please correct !")
+            msg.setWindowTitle("please correct value")
+            msg.exec_()
+            return False
+        else:
+            return True
+        
+    def write_edited_wavheader(self):
+
         crit1 = False
+        #TODO : ?Sonderzeichencheck ??
         self.wavheader['nextfilename'] = self.ui.tableWidget_3.item(0, 0).text()
         preview = {}
         for ix in range(0,8):
@@ -1079,28 +1113,27 @@ class WizardGUI(QMainWindow):
         # ck1 = self.wavheader['starttime']
         # if 
         # ckref1 = np.array([65536,13,65000,31,25,60,60,1000])
-
-        self.wavheader['filesize'] = int(self.ui.tableWidget.item(0, 0).text())  ##check for ulong
-        self.wavheader['sdr_nChunkSize'] = int(self.ui.tableWidget.item(1, 0).text()) ##check for long
-        self.wavheader['wFormatTag'] = int(self.ui.tableWidget.item(2, 0).text()) ##check for short
-        self.wavheader['nChannels'] = int(self.ui.tableWidget.item(3, 0).text()) ##check for short
-        self.wavheader['nSamplesPerSec'] = int(self.ui.tableWidget.item(4, 0).text()) ##check for long
-        self.wavheader['nAvgBytesPerSec'] = int(self.ui.tableWidget.item(5, 0).text()) ##check for long
-        self.wavheader['nBlockAlign'] = int(self.ui.tableWidget.item(6, 0).text()) ##check for short
-        self.wavheader['nBitsPerSample'] = int(self.ui.tableWidget.item(7, 0).text()) ##check for short
-        self.wavheader['centerfreq'] = int(self.ui.tableWidget.item(8, 0).text()) ##check for long
-        self.wavheader['data_nChunkSize'] = int(self.ui.tableWidget.item(9, 0).text())##check for long
-        self.wavheader['ADFrequency'] = int(self.ui.tableWidget.item(10, 0).text())##check for long
-        self.wavheader['IFFrequency'] = int(self.ui.tableWidget.item(11, 0).text())##check for long
-        self.wavheader['Bandwidth'] = int(self.ui.tableWidget.item(12, 0).text())##check for long
-        self.wavheader['IQOffset'] = int(self.ui.tableWidget.item(13, 0).text())##check for long
+        checklist = ['filesize','sdr_nChunkSize','wFormatTag','nChannels', 'nSamplesPerSec',
+            'nAvgBytesPerSec', 'nBlockAlign','nBitsPerSample','centerfreq','data_nChunkSize',
+            'ADFrequency','IFFrequency','Bandwidth','IQOffset']
+        typelist = ['ulong', 'long', 'short', 'short', 'long', 
+                    'long', 'short', 'short', 'long', 'long',
+                     'long',  'long',  'long',  'long']
+        for ix2 in range(len(checklist)):
+            self.wavheader[checklist[ix2]] = int(self.ui.tableWidget.item(ix2, 0).text())
+            chk = False
+            chk = self.check_consistency(self.wavheader[checklist[ix2]],typelist[ix2],checklist[ix2])
+            if chk == False:
+                return False
+                #self.wavheader[checklist[ix2]] = int(self.ui.tableWidget.item(ix2, 0).text())
 
         if self.fileopened == True:
-
-            wav_test_filename = self.my_dirname + '/templatewavheader.wav'
-            ovwrt_flag = False
-            WAVheader_tools.write_sdruno_header(self,wav_test_filename,self.wavheader,ovwrt_flag)
-
+            if self.ovwrt_flag == False:
+                wav_filename = self.my_dirname + '/templatewavheader.wav'
+            else: 
+                wav_filename = self.f1
+            
+            WAVheader_tools.write_sdruno_header(self,wav_filename,self.wavheader,self.ovwrt_flag)   
 
     def extract_startstoptimes_auxi(self, wavheader):
         """_synthetize next filename in the playlist in case the latter cannot be extracted
