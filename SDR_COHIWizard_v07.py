@@ -307,8 +307,10 @@ class autoscan_worker(QtCore.QThread):
         self.SigFinished.emit()
 
 class WizardGUI(QMainWindow):
+
     #signals
     SigToolbar = pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Constants
@@ -317,9 +319,9 @@ class WizardGUI(QMainWindow):
         self.CURTIMEINCREMENT = 5
         self.DATABLOCKSIZE = 1024*32
         self.DELTAF = 5000 #minimum peak distance in Hz  for peak detector
-        self.PEAKWIDTH = 50 # minimum peak width in Hz  for peak detector
+        self.PEAKWIDTH = 10 # minimum peak width in Hz  for peak detector
         self.PROMINENCE = 15 # minimum peak prominence in dB above baseline for peak detector
-        self.FILTERKERNEL = 5 # length of the moving median filter kernel in % of the spectral span
+        self.FILTERKERNEL = 2 # length of the moving median filter kernel in % of the spectral span
         self.NUMSNAPS = 5 #number of segments evaluated for annotation
         self.STICHTAG = datetime(2023,2,25,0,0,0)
         self.autoscan_ix = 0
@@ -595,6 +597,7 @@ class WizardGUI(QMainWindow):
         # have a min distance of self.DELTAF and a min width of self.PEAKWIDTH
         dist = np.floor(np.maximum(self.DELTAF/self.wavheader['nSamplesPerSec']*N,100))
         wd = np.floor(self.PEAKWIDTH/self.wavheader['nSamplesPerSec']*N)
+        print(f"peakwidth: {wd}")
         peaklocs, peakprops = sig.find_peaks(datay_filt,
                         prominence=(self.PROMINENCE,None), distance=dist, width = wd)
         ret = {"datax": datax, "datay": datay, "datay_filt": datay_filt,
